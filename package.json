@@ -1,0 +1,78 @@
+{
+  "name": "demo-extension",
+  "displayName": "demo-extension",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.83.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "demo-extension.helloWorld",
+        "title": "sqlcl-execute"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "apexApplications",
+          "name": "APEX Applications"
+        },
+        {
+          "id": "ordsServices",
+          "name": "REST Data Services"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "sqlcl execute",
+      "properties":{
+        "sqlclExecute.compileOnSave": {
+          "title": "Autocompile Database Objects on save",
+          "scope": "window",
+          "type": "boolean",
+          "default": false
+        },
+        "sqlclExecute.showApexApps": {
+          "title": "Show APEX Applications in schema",
+          "scope": "window",
+          "type": "boolean",
+          "default": false
+        },
+        "sqlclExecute.ordsServices": {
+          "title": "Show REST Data Services in schema",
+          "scope": "window",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.2",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.83.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.3",
+    "@typescript-eslint/parser": "^6.7.3",
+    "@vscode/test-electron": "^2.3.4",
+    "antlr4": "^4.7.2",
+    "eslint": "^8.50.0",
+    "glob": "^10.3.3",
+    "mocha": "^10.2.0",
+    "typescript": "^5.2.2"
+  }
+}
