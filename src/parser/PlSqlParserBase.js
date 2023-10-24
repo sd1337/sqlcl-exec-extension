@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Parser } from "antlr4";
 
 export default class PlSqlParserBase extends Parser {

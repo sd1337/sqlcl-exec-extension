@@ -1,11 +1,10 @@
-
 // type PlSqlParserTyper
 
-/*function ParserRuleContext(parent, invokingStateNumber) {
-	parent = parent || null;
-	invokingStateNumber = invokingStateNumber || null;
-	RuleContext.call(this, parent, invokingStateNumber);
-	this.ruleIndex = -1;
+/* function ParserRuleContext(parent, invokingStateNumber) {
+    parent = parent || null;
+    invokingStateNumber = invokingStateNumber || null;
+    RuleContext.call(this, parent, invokingStateNumber);
+    this.ruleIndex = -1;
     // * If we are debugging or building a parse tree for a visitor,
     // we need to track all of the tokens and rule invocations associated
     // with this rule's context. This is empty for parsing w/o tree constr.
@@ -20,13 +19,12 @@
     this.exception = null;
 } */
 
-type ParserRuleContextType = {
-    parent: ParserRuleContextType | null;
-    invokingStateNumber: number | null;
-    ruleIndex: number;
-    children: ParserRuleContextType[] | null;
-    start: any;
-    stop: any;
-    exception: any;
-}
-
+export type ParserRuleContextType = {
+  parent: ParserRuleContextType | null;
+  invokingStateNumber: number | null;
+  ruleIndex: number;
+  children: ParserRuleContextType[] | null;
+  start: any;
+  stop: any;
+  exception: any;
+};

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as path from 'path';
 import Connection from '../database/connection';
 import { APEXFolder, Node } from '../shared/treeViewUtils';
+import { BindTypes } from '../database/preparedStatement';
 
 type RegionSelect = {
   region_name: string;
@@ -15,9 +15,8 @@ type SelectResponse<T> = {
   items: T[];
 };
 
-export class ApexProvider implements vscode.TreeDataProvider<Node> {
+export default class ApexProvider implements vscode.TreeDataProvider<Node> {
   constructor(private workspaceRoot: string, private connection: Connection, private extensionName: string) { }
-
 
   refresh(): void {
     debugger;
@@ -27,17 +26,17 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
     return element;
   }
 
-  getPages(pages: Pages): Thenable<Node[]> {
-    return this.connection.getSelectStatement(`SELECT page_id, page_name
-    FROM apex_application_pages
-    WHERE application_id = ${pages.applicationId}
-    ORDER BY page_id;`).then((data: any) => {
-      const mapped = data.items.map(p => {
-        return new Page(`${p.page_name} (${p.page_id})`, pages.applicationId, vscode.TreeItemCollapsibleState.Collapsed, null, p.page_id);
-      });
-      // debugger;
-      return Promise.resolve(mapped);
-    });
+  async getPages(pages: Pages) {
+    // const data:any =  this.connection.getSelectStatement(`SELECT page_id, page_name
+    // FROM apex_application_pages
+    // WHERE application_id = ${pages.applicationId}
+    // ORDER BY page_id;`);
+    const data: any = await this.connection.prepareStatement(`SELECT page_id, page_name
+     FROM apex_application_pages
+     WHERE application_id = :ID
+     ORDER BY page_id;`).addParameter('ID', pages.applicationId.toString(), BindTypes.NUMBER).executeQuery();
+    const mapped = data.items.map((p) => new Page(`${p.page_name} (${p.page_id})`, pages.applicationId, vscode.TreeItemCollapsibleState.Collapsed, null, p.page_id));
+    return mapped;
   }
 
   getPage(page: Page): Thenable<Node[]> {
@@ -51,31 +50,29 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
   getPageRegions(pageRegions: PageRegions, parentRegion: PageRegion = null): Thenable<Node[]> {
     if (parentRegion) {
       return Promise.resolve([]);
-    } else {
-      return this.connection.getSelectStatement(`SELECT region_name, display_sequence, TO_CHAR(region_id) region_id, source_type_plugin_name region_type
+    }
+    return this.connection.getSelectStatement(`SELECT region_name, display_sequence, TO_CHAR(region_id) region_id, source_type_plugin_name region_type
       FROM apex_application_page_regions
       WHERE application_id = ${pageRegions.applicationId}
       AND page_id = ${pageRegions.pageId}
       AND parent_region_id IS NULL
       ORDER BY display_sequence`).then((data: SelectResponse<RegionSelect>) => {
-        const mapped = data.items.map(p => {
-          return new PageRegion(`${p.region_name} (${p.display_sequence})`,
-            pageRegions.applicationId,
-            pageRegions.pageId,
-            p.region_id,
-            p.region_type,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            {
-              command: `${this.extensionName}.openRegionSource`,
-              title: '',
-              arguments: [p.region_id, p.region_type]
-            }
-          );
-        });
+      const mapped = data.items.map((p) => new PageRegion(
+        `${p.region_name} (${p.display_sequence})`,
+        pageRegions.applicationId,
+        pageRegions.pageId,
+        p.region_id,
+        p.region_type,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        {
+          command: `${this.extensionName}.openRegionSource`,
+          title: '',
+          arguments: [p.region_id, p.region_type],
+        },
+      ));
         // debugger;
-        return Promise.resolve(mapped);
-      });
-    }
+      return Promise.resolve(mapped);
+    });
   }
 
   getSharedComponents(sharedComponents: SharedComponents): Thenable<Node[]> {
@@ -92,9 +89,7 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
     FROM apex_application_items
     WHERE application_id = ${applicationItems.applicationId}
     ORDER BY item_name;`).then((data: any) => {
-      const mapped = data.items.map(p => {
-        return new ApplicationItem(`${p.item_name}`, vscode.TreeItemCollapsibleState.None);
-      });
+      const mapped = data.items.map((p) => new ApplicationItem(`${p.item_name}`, vscode.TreeItemCollapsibleState.None));
       // debugger;
       return Promise.resolve(mapped);
     });
@@ -105,9 +100,7 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
     FROM apex_application_processes
     WHERE application_id = ${applicationProcesses.applicationId}
     ORDER BY process_name;`).then((data: any) => {
-      const mapped = data.items.map(p => {
-        return new ApplicationItem(`${p.process_name}`, vscode.TreeItemCollapsibleState.None);
-      });
+      const mapped = data.items.map((p) => new ApplicationItem(`${p.process_name}`, vscode.TreeItemCollapsibleState.None));
       // debugger;
       return Promise.resolve(mapped);
     });
@@ -118,9 +111,7 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
     FROM apex_application_computations
     WHERE application_id = ${applicationComputations.applicationId}
     ORDER BY computation;`).then((data: any) => {
-      const mapped = data.items.map(p => {
-        return new ApplicationItem(`${p.computation_name}`, vscode.TreeItemCollapsibleState.None);
-      });
+      const mapped = data.items.map((p) => new ApplicationItem(`${p.computation_name}`, vscode.TreeItemCollapsibleState.None));
       // debugger;
       return Promise.resolve(mapped);
     });
@@ -138,19 +129,19 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
           new Pages('Pages', element.applicationId, vscode.TreeItemCollapsibleState.Collapsed),
           new SharedComponents('Shared Components', element.applicationId, vscode.TreeItemCollapsibleState.Collapsed),
         ]);
-      } else if (element instanceof Pages) {
+      } if (element instanceof Pages) {
         return this.getPages(element);
-      } else if (element instanceof Page) {
+      } if (element instanceof Page) {
         return this.getPage(element);
-      } else if (element instanceof PageRegions) {
+      } if (element instanceof PageRegions) {
         return this.getPageRegions(element);
-      } else if (element instanceof SharedComponents) {
+      } if (element instanceof SharedComponents) {
         return this.getSharedComponents(element);
-      } else if (element instanceof ApplicationItems) {
+      } if (element instanceof ApplicationItems) {
         return this.getApplicationItems(element);
-      } else if (element instanceof ApplicationProcesses) {
+      } if (element instanceof ApplicationProcesses) {
         return this.getApplicationProcesses(element);
-      } else if (element instanceof ApplicationComputations) {
+      } if (element instanceof ApplicationComputations) {
         return this.getApplicationComputations(element);
       }
     } else {
@@ -158,9 +149,7 @@ export class ApexProvider implements vscode.TreeDataProvider<Node> {
       from apex_applications a
       WHERE a.owner = user
       order by a.application_id;`).then((data: any) => {
-        const mapped = data.items.map(p => {
-          return new Application(p.name, p.version.toString(), vscode.TreeItemCollapsibleState.Collapsed, null, p.application_id);
-        });
+        const mapped = data.items.map((p) => new Application(p.name, p.version.toString(), vscode.TreeItemCollapsibleState.Collapsed, null, p.application_id));
         // debugger;
         return Promise.resolve(mapped);
       });
@@ -183,7 +172,7 @@ class Application extends Node {
     protected version: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly command?: vscode.Command,
-    public readonly applicationId?: number
+    public readonly applicationId?: number,
   ) {
     super(label, version, collapsibleState, command, 'apex-80.svg');
     this.tooltip = `${this.label}-${this.version}`;
@@ -197,7 +186,7 @@ class Page extends Node {
     public readonly applicationId: number,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly command?: vscode.Command,
-    public readonly pageId?: number
+    public readonly pageId?: number,
   ) {
     super(label, null, collapsibleState, command);
     this.tooltip = `${this.label}`;
